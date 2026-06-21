@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:today_poor/core/theme/app_colors.dart';
+import 'package:today_poor/features/home/presentation/widgets/create_room_dialog.dart';
 
 enum HomeViewState { empty, rooms }
 
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late HomeViewState _viewState;
+  final List<_RoomItem> _rooms = [];
 
   @override
   void initState() {
@@ -25,8 +27,20 @@ class _HomePageState extends State<HomePage> {
     _viewState = widget.viewState;
   }
 
-  void _showMockRooms() {
+  Future<void> _openCreateRoomDialog() async {
+    final result = await showDialog<CreateRoomResult>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (_) => const CreateRoomDialog(),
+    );
+
+    if (result == null || !mounted) return;
+
     setState(() {
+      _rooms.insert(
+        0,
+        _RoomItem(name: result.name, memberCount: 1, capacity: result.capacity),
+      );
       _viewState = HomeViewState.rooms;
     });
   }
@@ -49,13 +63,13 @@ class _HomePageState extends State<HomePage> {
               constraints: const BoxConstraints(maxWidth: 402),
               child: Column(
                 children: [
-                  _HomeHeader(onAddRoom: _showMockRooms),
+                  _HomeHeader(onAddRoom: _openCreateRoomDialog),
                   Expanded(
                     child: switch (_viewState) {
                       HomeViewState.empty => _EmptyRoomsView(
-                        onAddRoom: _showMockRooms,
+                        onAddRoom: _openCreateRoomDialog,
                       ),
-                      HomeViewState.rooms => const _RoomsView(),
+                      HomeViewState.rooms => _RoomsView(rooms: _rooms),
                     },
                   ),
                 ],
@@ -184,28 +198,56 @@ class _AddRoomButton extends StatelessWidget {
   }
 }
 
-class _RoomsView extends StatelessWidget {
-  const _RoomsView();
+class _RoomsView extends StatefulWidget {
+  const _RoomsView({required this.rooms});
 
-  static const _rooms = [
-    _MockRoom(name: '김세원 따까리(신여원)', memberCount: 2, capacity: 3),
-    _MockRoom(name: '최예윤과 아이들', memberCount: 3, capacity: 4),
-    _MockRoom(name: '배병윤 멍청이', memberCount: 5, capacity: 5),
-  ];
+  final List<_RoomItem> rooms;
+
+  @override
+  State<_RoomsView> createState() => _RoomsViewState();
+}
+
+class _RoomsViewState extends State<_RoomsView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      key: const ValueKey('mock-room-list'),
-      padding: const EdgeInsets.fromLTRB(27, 72, 27, 40),
-      children: [
-        const _ReportCard(),
-        const SizedBox(height: 38),
-        for (var index = 0; index < _rooms.length; index++) ...[
-          _RoomCard(room: _rooms[index]),
-          if (index != _rooms.length - 1) const SizedBox(height: 13),
+    return Padding(
+      padding: const EdgeInsets.only(top: 72),
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 27),
+            child: _ReportCard(),
+          ),
+          const SizedBox(height: 38),
+          Expanded(
+            child: Scrollbar(
+              controller: _scrollController,
+              child: ListView.separated(
+                key: const ValueKey('room-list'),
+                controller: _scrollController,
+                primary: false,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(27, 0, 27, 40),
+                itemCount: widget.rooms.length,
+                itemBuilder: (context, index) {
+                  return _RoomCard(room: widget.rooms[index]);
+                },
+                separatorBuilder: (_, _) => const SizedBox(height: 13),
+              ),
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -263,7 +305,7 @@ class _ReportCard extends StatelessWidget {
 class _RoomCard extends StatelessWidget {
   const _RoomCard({required this.room});
 
-  final _MockRoom room;
+  final _RoomItem room;
 
   @override
   Widget build(BuildContext context) {
@@ -344,8 +386,8 @@ class _MemberAvatar extends StatelessWidget {
   }
 }
 
-class _MockRoom {
-  const _MockRoom({
+class _RoomItem {
+  const _RoomItem({
     required this.name,
     required this.memberCount,
     required this.capacity,
