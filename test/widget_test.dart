@@ -192,7 +192,7 @@ void main() {
       expect(find.text('업로드 완료!'), findsNWidgets(3));
       expect(find.text('아직 업로드되지 않았어요.'), findsNothing);
       expect(find.text('눌러서 업로드하기'), findsOneWidget);
-      expect(find.bySemanticsLabel('내 소비내역 업로드'), findsOneWidget);
+      expect(find.byKey(const ValueKey('my-upload-action')), findsOneWidget);
       for (final name in ['세원', '예윤', '여원', '병윤']) {
         expect(find.text(name), findsOneWidget);
       }
@@ -221,7 +221,7 @@ void main() {
 
       expect(find.text('업로드 완료!'), findsNWidgets(3));
 
-      await tester.tap(find.bySemanticsLabel('내 소비내역 업로드'));
+      await tester.tap(find.byKey(const ValueKey('my-upload-action')));
       await tester.pumpAndSettle();
 
       expect(find.text('업로드 완료!'), findsNWidgets(4));

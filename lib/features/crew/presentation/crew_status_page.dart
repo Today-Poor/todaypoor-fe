@@ -222,7 +222,9 @@ class _MemberStatusCard extends StatelessWidget {
             bottom: 0,
             child: Center(child: _MemberAvatar(name: member.name)),
           ),
-          Center(child: _StatusContent(member: member, onUpload: onUpload)),
+          Center(
+            child: _StatusContent(member: member, onUpload: onUpload),
+          ),
         ],
       ),
     );
@@ -260,21 +262,24 @@ class _StatusContent extends StatelessWidget {
     }
 
     return Semantics(
+      key: const ValueKey('my-upload-action'),
       button: true,
       label: '내 소비내역 업로드',
       child: GestureDetector(
         onTap: onUpload,
         behavior: HitTestBehavior.opaque,
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.file_upload_outlined,
-              size: 30,
-              color: AppColors.brandFill,
+            Image.asset(
+              'assets/images/crew_upload.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
-            SizedBox(height: 4),
-            Text(
+            const SizedBox(height: 4),
+            const Text(
               '눌러서 업로드하기',
               style: TextStyle(
                 color: AppColors.textMuted,
