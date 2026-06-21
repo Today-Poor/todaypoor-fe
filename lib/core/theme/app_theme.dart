@@ -1,29 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:today_poor/core/theme/app_colors.dart';
 
 class AppTheme {
   const AppTheme._();
 
   static ThemeData light() {
-    const seedColor = Color(0xFF1B6B5E);
-
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: seedColor,
-        brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.brandFill,
+        onPrimary: Colors.white,
+        surface: AppColors.cardBackground,
+        onSurface: AppColors.textPrimary,
+        outline: AppColors.cardBorder,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF7F8F5),
+      scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.textPrimary,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
+        color: AppColors.cardBackground,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFFE4E8DF)),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.cardBorder),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.inputBackground,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
         ),
       ),
     );
