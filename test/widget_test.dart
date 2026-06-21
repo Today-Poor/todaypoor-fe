@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:today_poor/app/app.dart';
 import 'package:today_poor/features/crew/presentation/crew_status_page.dart';
 import 'package:today_poor/features/home/presentation/home_page.dart';
 import 'package:today_poor/features/landing/presentation/logged_in_landing_page.dart';
 import 'package:today_poor/features/landing/presentation/login_page.dart';
+import 'package:today_poor/features/upload/presentation/expense_upload_page.dart';
+import 'package:today_poor/features/upload/presentation/upload_check_page.dart';
 
 void main() {
   group('LoginPage', () {
@@ -216,7 +219,7 @@ void main() {
       expect(find.text('눌러서 업로드하기'), findsNothing);
     });
 
-    testWidgets('내 카드를 누르면 업로드 완료로 바뀐다', (tester) async {
+    testWidgets('내 카드를 누르면 사진 업로드 화면으로 이동한다', (tester) async {
       await tester.pumpWidget(buildPage());
 
       expect(find.text('업로드 완료!'), findsNWidgets(3));
@@ -224,8 +227,190 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('my-upload-action')));
       await tester.pumpAndSettle();
 
-      expect(find.text('업로드 완료!'), findsNWidgets(4));
+      expect(find.byType(ExpenseUploadPage), findsOneWidget);
+      expect(find.text('소비내역 업로드하기'), findsOneWidget);
+    });
+  });
+
+  group('ExpenseUploadPage', () {
+    Future<List<XFile>> pickImages() async => [
+      XFile('/tmp/mock-receipt-1.png'),
+    ];
+
+    Widget buildPage() => _TestWrapper(
+      child: ExpenseUploadPage(
+        date: DateTime(2026, 5, 27),
+        pickImages: pickImages,
+      ),
+    );
+
+    testWidgets('날짜와 업로드 안내를 보여준다', (tester) async {
+      await tester.pumpWidget(buildPage());
+
+      expect(find.text('2026년 5월 27일 수요일'), findsOneWidget);
+      expect(find.text('소비내역 업로드하기'), findsOneWidget);
+      expect(find.text('오늘의 소비내역을 업로드해주세요!'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('이미지를 선택하면 소비내역 확인 화면으로 이동한다', (tester) async {
+      await tester.pumpWidget(buildPage());
+
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UploadCheckPage), findsOneWidget);
+      expect(find.text('오늘의 소비내역'), findsOneWidget);
+      expect(find.text('이디야커피'), findsOneWidget);
+      expect(find.text('34,000원'), findsOneWidget);
+    });
+
+    testWidgets('업로드 확인 후 완료 결과를 반환한다', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: FilledButton(
+                    onPressed: () async {
+                      final didUpload = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => ExpenseUploadPage(
+                            date: DateTime(2026, 5, 27),
+                            pickImages: pickImages,
+                          ),
+                        ),
+                      );
+                      if (context.mounted && didUpload == true) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('업로드 처리 완료')),
+                        );
+                      }
+                    },
+                    child: const Text('업로드 화면 열기'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('업로드 화면 열기'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('업로드 완료'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('업로드 처리 완료'), findsOneWidget);
+    });
+
+    testWidgets('업로드 완료 후 크루 현황에 완료 상태가 반영된다', (tester) async {
+      await tester.pumpWidget(
+        _TestWrapper(
+          child: CrewStatusPage(
+            crewName: '테스트 크루',
+            capacity: 1,
+            members: const [
+              CrewMember(name: '예윤', hasUploaded: false, isMe: true),
+            ],
+            uploadPageBuilder: (_) => ExpenseUploadPage(
+              date: DateTime(2026, 5, 27),
+              pickImages: pickImages,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('my-upload-action')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('업로드 완료'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('업로드 완료!'), findsOneWidget);
       expect(find.text('눌러서 업로드하기'), findsNothing);
+    });
+
+    testWidgets('추가 업로드를 누르면 소비 항목이 추가된다', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('추가 업로드'));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const ValueKey('expense-draft-list')),
+        const Offset(0, -80),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('이디야커피'), findsOneWidget);
+      expect(find.text('온라인 쇼핑'), findsOneWidget);
+    });
+
+    testWidgets('소비내역을 수정할 수 있다', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('edit-expense-button')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('edit-store-field')),
+        '수정된 카페',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('edit-amount-field')),
+        '12000',
+      );
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('수정된 카페'), findsOneWidget);
+      expect(find.text('12,000원'), findsOneWidget);
+    });
+
+    testWidgets('여러 이미지를 선택하면 선택한 수만큼 항목을 생성한다', (tester) async {
+      Future<List<XFile>> pickMultipleImages() async => [
+        XFile('/tmp/mock-receipt-1.png'),
+        XFile('/tmp/mock-receipt-2.png'),
+        XFile('/tmp/mock-receipt-3.png'),
+      ];
+
+      await tester.pumpWidget(
+        _TestWrapper(
+          child: ExpenseUploadPage(
+            date: DateTime(2026, 5, 27),
+            pickImages: pickMultipleImages,
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('expense-photo-upload-action')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('이디야커피'), findsOneWidget);
+      expect(find.text('온라인 쇼핑'), findsOneWidget);
+      expect(find.text('버스 교통비'), findsOneWidget);
     });
   });
 }

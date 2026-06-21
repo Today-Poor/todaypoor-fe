@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:today_poor/core/theme/app_colors.dart';
+import 'package:today_poor/features/upload/presentation/expense_upload_page.dart';
 
 /// 크루 멤버 한 명의 오늘 소비내역 업로드 상태.
 class CrewMember {
@@ -53,6 +54,7 @@ class CrewStatusPage extends StatefulWidget {
     required this.capacity,
     required this.members,
     this.reportTime = '22:00',
+    this.uploadPageBuilder,
   });
 
   final String crewName;
@@ -61,6 +63,7 @@ class CrewStatusPage extends StatefulWidget {
 
   /// 리포트가 공개되는 시각 (예: 22:00).
   final String reportTime;
+  final WidgetBuilder? uploadPageBuilder;
 
   @override
   State<CrewStatusPage> createState() => _CrewStatusPageState();
@@ -75,7 +78,15 @@ class _CrewStatusPageState extends State<CrewStatusPage> {
     _members = List<CrewMember>.from(widget.members);
   }
 
-  void _uploadMine(int index) {
+  Future<void> _openUploadPage(int index) async {
+    final didUpload = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: widget.uploadPageBuilder ?? (_) => const ExpenseUploadPage(),
+      ),
+    );
+
+    if (didUpload != true || !mounted) return;
+
     setState(() {
       _members[index] = _members[index].copyWith(hasUploaded: true);
     });
@@ -136,7 +147,7 @@ class _CrewStatusPageState extends State<CrewStatusPage> {
                       itemBuilder: (context, index) {
                         return _MemberStatusCard(
                           member: _members[index],
-                          onUpload: () => _uploadMine(index),
+                          onUpload: () => _openUploadPage(index),
                         );
                       },
                       separatorBuilder: (_, _) => const SizedBox(height: 16),
