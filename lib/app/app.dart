@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:today_poor/core/theme/app_theme.dart';
-import 'package:today_poor/features/home/presentation/home_page.dart';
+import 'package:today_poor/features/landing/presentation/login_page.dart';
 
 class TodayPoorApp extends StatelessWidget {
   const TodayPoorApp({super.key});
@@ -8,10 +8,10 @@ class TodayPoorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Today Poor',
+      title: '오늘의거지',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: const HomePage(),
+      home: const LoginPage(),
     );
   }
 }
