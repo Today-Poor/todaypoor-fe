@@ -1,14 +1,54 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:today_poor/core/theme/app_colors.dart';
+import 'package:today_poor/features/home/presentation/home_page.dart';
 
 /// 로그인 성공 이후 임시로 노출되는 랜딩 화면.
 ///
 /// 실제 인증과 홈 이동이 구현되기 전까지 소셜 로그인 성공 상태를 표현한다.
-class LoggedInLandingPage extends StatelessWidget {
+class LoggedInLandingPage extends StatefulWidget {
   const LoggedInLandingPage({super.key});
 
+  @override
+  State<LoggedInLandingPage> createState() => _LoggedInLandingPageState();
+}
+
+class _LoggedInLandingPageState extends State<LoggedInLandingPage> {
   static const double _designWidth = 402;
   static const double _minimumContentHeight = 757;
+  Timer? _navigationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationTimer = Timer(const Duration(seconds: 2), _openHome);
+  }
+
+  @override
+  void dispose() {
+    _navigationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _openHome() {
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, _, _) => const HomePage(),
+        transitionDuration: const Duration(milliseconds: 700),
+        transitionsBuilder: (_, animation, _, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          );
+
+          return FadeTransition(opacity: curvedAnimation, child: child);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

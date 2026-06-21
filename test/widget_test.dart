@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:today_poor/app/app.dart';
+import 'package:today_poor/features/home/presentation/home_page.dart';
 import 'package:today_poor/features/landing/presentation/logged_in_landing_page.dart';
 import 'package:today_poor/features/landing/presentation/login_page.dart';
 
@@ -43,9 +44,47 @@ void main() {
       expect(find.byType(LoggedInLandingPage), findsOneWidget);
     });
   });
+
+  group('LoggedInLandingPage', () {
+    testWidgets('2초 후 방이 없는 메인 화면으로 이동한다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: LoggedInLandingPage()));
+
+      expect(find.byType(LoggedInLandingPage), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoggedInLandingPage), findsNothing);
+      expect(find.byType(HomePage), findsOneWidget);
+      expect(find.text('참여 중인 방이 없어요.\n아이콘을 눌러 방을 추가해주세요.'), findsOneWidget);
+    });
+  });
+
+  group('HomePage', () {
+    testWidgets('참여 중인 방이 없으면 빈 상태를 보여준다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      expect(find.text('참여 중인 방이 없어요.\n아이콘을 눌러 방을 추가해주세요.'), findsOneWidget);
+      expect(find.bySemanticsLabel('방 추가'), findsOneWidget);
+      expect(find.bySemanticsLabel('첫 방 추가'), findsOneWidget);
+      expect(find.bySemanticsLabel('프로필'), findsOneWidget);
+    });
+
+    testWidgets('추가 버튼을 누르면 목업 방 목록을 보여준다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      await tester.tap(find.bySemanticsLabel('첫 방 추가'));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('mock-room-list')), findsOneWidget);
+      expect(find.text('나만의 소비내역 리포트 보기'), findsOneWidget);
+      expect(find.text('김세원 따까리(신여원) 2/3'), findsOneWidget);
+      expect(find.text('최예윤과 아이들 3/4'), findsOneWidget);
+      expect(find.text('배병윤 멍청이 5/5'), findsOneWidget);
+    });
+  });
 }
 
-/// 테스트용 최소 MaterialApp 래퍼
 class _TestWrapper extends StatelessWidget {
   const _TestWrapper({required this.child});
 
