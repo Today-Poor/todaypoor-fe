@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:today_poor/app/app.dart';
+import 'package:today_poor/features/crew/presentation/crew_status_page.dart';
 import 'package:today_poor/features/home/presentation/home_page.dart';
 import 'package:today_poor/features/landing/presentation/logged_in_landing_page.dart';
 import 'package:today_poor/features/landing/presentation/login_page.dart';
@@ -142,6 +143,89 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(scrollableState.position.pixels, greaterThan(0));
+    });
+
+    testWidgets('방 카드를 누르면 크루 현황 화면으로 이동한다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      await tester.tap(find.bySemanticsLabel('첫 방 추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('room-name-field')),
+        '테스트 크루',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('room-capacity-field')),
+        '4',
+      );
+      await tester.tap(find.text('만들기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('테스트 크루 1/4'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CrewStatusPage), findsOneWidget);
+    });
+  });
+
+  group('CrewStatusPage', () {
+    const sampleMembers = [
+      CrewMember(name: '세원', hasUploaded: true),
+      CrewMember(name: '예윤', hasUploaded: false, isMe: true),
+      CrewMember(name: '여원', hasUploaded: true),
+      CrewMember(name: '병윤', hasUploaded: true),
+    ];
+
+    Widget buildPage() => const _TestWrapper(
+      child: CrewStatusPage(
+        crewName: '김세원 따까리(신여원)',
+        capacity: 4,
+        members: sampleMembers,
+      ),
+    );
+
+    testWidgets('제목·리포트 안내·멤버 상태를 보여준다', (tester) async {
+      await tester.pumpWidget(buildPage());
+
+      expect(find.text('김세원 따까리(신여원)4/4'), findsOneWidget);
+      expect(find.text('22:00에 리포트가 공개됩니다.'), findsOneWidget);
+      expect(find.text('업로드 완료!'), findsNWidgets(3));
+      expect(find.text('아직 업로드되지 않았어요.'), findsNothing);
+      expect(find.text('눌러서 업로드하기'), findsOneWidget);
+      expect(find.bySemanticsLabel('내 소비내역 업로드'), findsOneWidget);
+      for (final name in ['세원', '예윤', '여원', '병윤']) {
+        expect(find.text(name), findsOneWidget);
+      }
+    });
+
+    testWidgets('타인이 미업로드면 안내 문구를 보여준다', (tester) async {
+      await tester.pumpWidget(
+        const _TestWrapper(
+          child: CrewStatusPage(
+            crewName: '테스트 크루',
+            capacity: 2,
+            members: [
+              CrewMember(name: '세원', hasUploaded: false),
+              CrewMember(name: '예윤', hasUploaded: true, isMe: true),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('아직 업로드되지 않았어요.'), findsOneWidget);
+      expect(find.text('눌러서 업로드하기'), findsNothing);
+    });
+
+    testWidgets('내 카드를 누르면 업로드 완료로 바뀐다', (tester) async {
+      await tester.pumpWidget(buildPage());
+
+      expect(find.text('업로드 완료!'), findsNWidgets(3));
+
+      await tester.tap(find.bySemanticsLabel('내 소비내역 업로드'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('업로드 완료!'), findsNWidgets(4));
+      expect(find.text('눌러서 업로드하기'), findsNothing);
     });
   });
 }

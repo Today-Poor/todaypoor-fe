@@ -31,6 +31,10 @@ abstract final class AppColors {
   static const Color cardBackground = Color(0xFFFAF7F0);
   static const Color cardBorder = Color(0xFFE8DCC8);
 
+  // ── Crew status ──────────────────────────────────────────
+  /// "22:00에 리포트가 공개됩니다." 강조 문구색 (벽돌 레드)
+  static const Color reportHighlight = Color(0xFFB5432B);
+
   // ── Input ────────────────────────────────────────────────
   static const Color inputBackground = Color(0xFFE8DCC8);
 

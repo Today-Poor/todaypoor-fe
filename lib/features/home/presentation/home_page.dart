@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:today_poor/core/theme/app_colors.dart';
+import 'package:today_poor/features/crew/presentation/crew_status_page.dart';
 import 'package:today_poor/features/home/presentation/widgets/create_room_dialog.dart';
 
 enum HomeViewState { empty, rooms }
@@ -216,6 +217,18 @@ class _RoomsViewState extends State<_RoomsView> {
     super.dispose();
   }
 
+  void _openCrewStatus(BuildContext context, _RoomItem room) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CrewStatusPage(
+          crewName: room.name,
+          capacity: room.capacity,
+          members: sampleCrewRoster(room.memberCount),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -240,7 +253,11 @@ class _RoomsViewState extends State<_RoomsView> {
                 padding: const EdgeInsets.fromLTRB(27, 0, 27, 40),
                 itemCount: widget.rooms.length,
                 itemBuilder: (context, index) {
-                  return _RoomCard(room: widget.rooms[index]);
+                  final room = widget.rooms[index];
+                  return _RoomCard(
+                    room: room,
+                    onTap: () => _openCrewStatus(context, room),
+                  );
                 },
                 separatorBuilder: (_, _) => const SizedBox(height: 13),
               ),
@@ -303,20 +320,24 @@ class _ReportCard extends StatelessWidget {
 }
 
 class _RoomCard extends StatelessWidget {
-  const _RoomCard({required this.room});
+  const _RoomCard({required this.room, required this.onTap});
 
   final _RoomItem room;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 130,
-      padding: const EdgeInsets.fromLTRB(20, 22, 17, 10),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 130,
+        padding: const EdgeInsets.fromLTRB(20, 22, 17, 10),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -343,7 +364,8 @@ class _RoomCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
