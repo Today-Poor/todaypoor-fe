@@ -70,19 +70,96 @@ void main() {
       expect(find.bySemanticsLabel('프로필'), findsOneWidget);
     });
 
-    testWidgets('추가 버튼을 누르면 목업 방 목록을 보여준다', (tester) async {
+    testWidgets('추가 버튼을 누르면 크루 생성 모달을 보여준다', (tester) async {
       await tester.pumpWidget(const _TestWrapper(child: HomePage()));
 
       await tester.tap(find.bySemanticsLabel('첫 방 추가'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('mock-room-list')), findsOneWidget);
+      expect(find.text('새로운 크루 만들기'), findsOneWidget);
+      expect(find.text('크루 이름'), findsOneWidget);
+      expect(find.text('인원 수'), findsOneWidget);
+      expect(find.text('취소'), findsOneWidget);
+      expect(find.text('만들기'), findsOneWidget);
+    });
+
+    testWidgets('모달 입력 후 만들기를 누르면 생성한 방 목록을 보여준다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      await tester.tap(find.bySemanticsLabel('첫 방 추가'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('room-name-field')),
+        '테스트 크루',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('room-capacity-field')),
+        '4',
+      );
+      await tester.tap(find.text('만들기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('room-list')), findsOneWidget);
+      expect(find.byType(Scrollable), findsWidgets);
       expect(find.text('나만의 소비내역 리포트 보기'), findsOneWidget);
-      expect(find.text('김세원 따까리(신여원) 2/3'), findsOneWidget);
-      expect(find.text('최예윤과 아이들 3/4'), findsOneWidget);
-      expect(find.text('배병윤 멍청이 5/5'), findsOneWidget);
+      expect(find.text('테스트 크루 1/4'), findsOneWidget);
+      expect(find.text('김세원 따까리(신여원) 2/3'), findsNothing);
+      expect(find.text('최예윤과 아이들 3/4'), findsNothing);
+      expect(find.text('배병윤 멍청이 5/5'), findsNothing);
+    });
+
+    testWidgets('취소를 누르면 빈 상태로 돌아간다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      await tester.tap(find.bySemanticsLabel('첫 방 추가'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('새로운 크루 만들기'), findsNothing);
+      expect(find.text('참여 중인 방이 없어요.\n아이콘을 눌러 방을 추가해주세요.'), findsOneWidget);
+    });
+
+    testWidgets('방 카드가 쌓이면 목록을 스크롤할 수 있다', (tester) async {
+      await tester.pumpWidget(const _TestWrapper(child: HomePage()));
+
+      await _createRoom(tester, name: '크루 1');
+      await _createRoom(tester, name: '크루 2');
+      await _createRoom(tester, name: '크루 3');
+      await _createRoom(tester, name: '크루 4');
+
+      final roomList = find.byKey(const ValueKey('room-list'));
+      final scrollable = find.descendant(
+        of: roomList,
+        matching: find.byType(Scrollable),
+      );
+      final scrollableState = tester.state<ScrollableState>(scrollable);
+
+      expect(scrollableState.position.maxScrollExtent, greaterThan(0));
+
+      await tester.drag(roomList, const Offset(0, -240));
+      await tester.pumpAndSettle();
+
+      expect(scrollableState.position.pixels, greaterThan(0));
     });
   });
+}
+
+Future<void> _createRoom(WidgetTester tester, {required String name}) async {
+  final addButton = find.bySemanticsLabel('방 추가').evaluate().isEmpty
+      ? find.bySemanticsLabel('첫 방 추가')
+      : find.bySemanticsLabel('방 추가');
+
+  await tester.tap(addButton);
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byKey(const ValueKey('room-name-field')), name);
+  await tester.enterText(
+    find.byKey(const ValueKey('room-capacity-field')),
+    '5',
+  );
+  await tester.tap(find.text('만들기'));
+  await tester.pumpAndSettle();
 }
 
 class _TestWrapper extends StatelessWidget {
